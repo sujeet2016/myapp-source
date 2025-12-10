@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER = "sujeet2016"
+        DOCKERHUB_USER = "sujeet0508"
         IMAGE_NAME = "myapp"
     }
 
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKERHUB_TOKEN')]) {
                     sh '''
-                    echo $DOCKERHUB_TOKEN | docker login -u sujeet2016 --password-stdin
+                    echo $DOCKERHUB_TOKEN | docker login -u sujeet0508 --password-stdin
                     '''
                 }
             }
