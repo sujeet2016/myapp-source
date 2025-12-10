@@ -4,6 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = "sujeet0508"
         IMAGE_NAME = "myapp"
+         IMAGE_TAG = ""
     }
 
     stages {
