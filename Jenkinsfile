@@ -4,22 +4,23 @@ pipeline {
     environment {
         DOCKERHUB_USER = "sujeet0508"
         IMAGE_NAME = "myapp"
-         IMAGE_TAG = ""
+        IMAGE_TAG = ""
     }
 
     stages {
 
         stage('Checkout Source') {
             steps {
-                git branch: 'main', url: 'https://github.com/sujeet2016/myapp-source.git'
+                git branch: 'main',
+                    url: 'https://github.com/sujeet2016/myapp-source.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    IMAGE_TAG = "v${env.BUILD_NUMBER}"
-                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                    env.IMAGE_TAG = "v${env.BUILD_NUMBER}"
+                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${env.IMAGE_TAG} ."
                 }
             }
         }
@@ -36,31 +37,28 @@ pipeline {
 
         stage('Push Image') {
             steps {
-                sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${env.IMAGE_TAG}"
             }
         }
 
         stage('Update Deployment Repo') {
             steps {
                 dir('manifests') {
-                    script {
-                        git url: 'https://github.com/sujeet2016/myapp-deployment.git', branch: 'main'
+                    git branch: 'main',
+                        url: 'https://github.com/sujeet2016/myapp-deployment.git'
 
-                        // FIX 1: Use single quotes so $ works safely
-                        sh '''
-                        sed -i "s|image: .*|image: sujeet2016/myapp:${IMAGE_TAG}|" k8s/deployment.yaml
-                        '''
+                    sh """
+                    sed -i 's|image: .*|image: ${DOCKERHUB_USER}/${IMAGE_NAME}:${env.IMAGE_TAG}|' k8s/deployment.yaml
+                    """
 
-                        // FIX 2: Escape $ in multiline block OR use env.GITHUB_PAT
-                        withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_PAT')]) {
-                            sh """
-                            git config user.email "jenkins@example.com"
-                            git config user.name "Jenkins"
-                            git add .
-                            git commit -m "Update image to ${IMAGE_TAG}" || true
-                            git push https://sujeet2016:${env.GITHUB_PAT}@github.com/sujeet2016/myapp-deployment.git
-                            """
-                        }
+                    withCredentials([string(credentialsId: 'github-pat', variable: 'GITHUB_PAT')]) {
+                        sh """
+                        git config user.email "jenkins@example.com"
+                        git config user.name "Jenkins"
+                        git add k8s/deployment.yaml
+                        git commit -m "Update image to ${env.IMAGE_TAG}" || true
+                        git push https://sujeet2016:${GITHUB_PAT}@github.com/sujeet2016/myapp-deployment.git
+                        """
                     }
                 }
             }
