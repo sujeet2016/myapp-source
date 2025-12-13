@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKERHUB_USER = "sujeet0508"
         IMAGE_NAME = "myapp"
-        IMAGE_TAG = ""
     }
 
     stages {
@@ -16,28 +15,19 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push Image') {
             steps {
                 script {
-                    env.IMAGE_TAG = "v${env.BUILD_NUMBER}"
-                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${env.IMAGE_TAG} ."
-                }
-            }
-        }
+                    def imageTag = "v${env.BUILD_NUMBER}"
 
-        stage('Docker Login') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKERHUB_TOKEN')]) {
-                    sh '''
-                    echo $DOCKERHUB_TOKEN | docker login -u sujeet0508 --password-stdin
-                    '''
-                }
-            }
-        }
+                    sh """
+                    docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${imageTag} .
+                    docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${imageTag}
+                    """
 
-        stage('Push Image') {
-            steps {
-                sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${env.IMAGE_TAG}"
+                    // export ONLY after creation
+                    env.IMAGE_TAG = imageTag
+                }
             }
         }
 
@@ -65,4 +55,5 @@ pipeline {
         }
     }
 }
+
 
